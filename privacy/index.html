@@ -29,7 +29,7 @@
   <div class="wrap narrow">
     <h1>Privacy policy</h1>
     <p class="lede">What TENdays collects, why, who sees it, where it is held, how long we keep it, and what you can do about it. Written to be read, not skimmed past.</p>
-    <p><strong>Version 1.0, 7 September 2026.</strong> Applies to the TENdays app on iPhone and Android, the web version of the app, and this website.</p>
+    <p><strong>Version 1.1, 8 September 2026.</strong> Applies to the TENdays app on iPhone and Android, the web version of the app, and this website.</p>
 
     <h2>Who we are</h2>
     <p>TENdays is the planning tool for community events run by Will Laithwaite. For anything in this policy, email <a href="mailto:hello@tendays.app">hello@tendays.app</a>. We are the data controller for the personal data described here: we decide why and how it is used.</p>
@@ -41,7 +41,7 @@
       <tr><th>Planning</th><td>Tasks, who they are assigned to, when they were completed and by whom. Risk-assessment answers, confirmed controls, and sign-offs, each recorded against the person who made them. Temporary Event Notice details you enter, including the name, phone number and email address of the person named as the premises user. Documents and photos you upload. Costs, ticket types, sales and other income you record. Debrief answers and incident notes from the day. Names of day-of volunteers a lead adds to the briefing.</td></tr>
       <tr><th>Messages</th><td>Messages, photos and files you send in an event's chat, polls you create and vote in, and which messages you have read. If you report a message, we keep the report (the message, its author, your reason) and show it to the event's leads and to us; the person reported is not told who reported them. If you block someone, only you can see that you have.</td></tr>
       <tr><th>Preferences</th><td>Your notification settings per event, and whether you have opted in to hear from us (see <em>Only with your consent</em> below). We keep a dated record of each consent choice, including the wording you saw.</td></tr>
-      <tr><th>Technical</th><td>A sign-in session held on your device. When you sign in, a bot check run by Cloudflare sees your connection details, and a record of each sign-in (date and connection address) is kept in our database. Our hosting provider keeps short-lived request logs to run and secure the service. The app fetches the public bank-holiday calendar from GOV.UK and looks up event postcodes at Postcodes.io, so those services see your device's connection address. The app does not yet send push notifications; if we add them, we will hold a device token only if you allow notifications, and update this policy first. On this website, GitHub (our host) and Google Fonts receive your IP address when pages and fonts load. This website sets no cookies and runs no analytics.</td></tr>
+      <tr><th>Technical</th><td>A sign-in session held on your device. When you sign in, a bot check run by Cloudflare sees your connection details, and a record of each sign-in (date and connection address) is kept in our database. Our hosting provider keeps short-lived request logs to run and secure the service. The app fetches the public bank-holiday calendar from GOV.UK and looks up event postcodes at Postcodes.io, so those services see your device's connection address. If you allow notifications, we hold a notification token for each phone you allow them on, so reminders can reach you when the app is closed. You can stop them at any time in Settings inside the app, or in your phone's own settings; signing out removes that phone's token. On this website, GitHub (our host) and Google Fonts receive your IP address when pages and fonts load. This website sets no cookies and runs no analytics.</td></tr>
     </table>
     <p>We do not take payments and hold no payment details. We do not collect your location: the postcode you enter is the event's, and it is used only to find the licensing authority and map position for the event.</p>
 
@@ -50,7 +50,7 @@
 
     <h2>Why we use it, and our legal basis</h2>
     <ul>
-      <li><strong>To provide the service (contract).</strong> Building your plan, calculating deadlines, sharing the event with its committee, sending sign-in codes, and sending the reminders your own plan generates: deadline warnings, the Temporary Event Notice countdown, and in-app notifications you have turned on. Service messages like these are part of running your account and are not marketing.</li>
+      <li><strong>To provide the service (contract).</strong> Building your plan, calculating deadlines, sharing the event with its committee, sending sign-in codes, and sending the reminders your own plan generates: deadline warnings, the Temporary Event Notice countdown, and the notifications you have turned on. Service messages like these are part of running your account and are not marketing.</li>
       <li><strong>To keep the service working and safe (legitimate interests).</strong> Bot checks on sign-in, rate limits, request logs, and investigating faults or misuse. We have weighed these against your interests and believe they are what you would expect from a service like this.</li>
       <li><strong>Only with your consent.</strong> Occasional emails about TENdays and, separately, asking how your event went. Both are opt-in switches under <em>Keeping in touch</em> in Settings, off by default, and can be turned off there at any time. Turning one off stops those emails; it does not affect the service messages above.</li>
     </ul>
@@ -66,7 +66,8 @@
           <li><strong>Cloudflare</strong>: the bot check when you ask for a sign-in code.</li>
           <li><strong>Postcodes.io</strong>: turns an event postcode into a licensing authority and map position. Only the postcode is sent.</li>
           <li><strong>GOV.UK</strong>: the app downloads the official bank-holiday calendar to work out working-day deadlines. Nothing about you or your event is sent. GOV.UK is a public data source rather than a provider working under our instructions.</li>
-          <li><strong>Apple and Google</strong>: deliver the app to your device through their app stores. Expo builds the app for us and receives none of your data.</li>
+          <li><strong>Expo</strong>: builds the app for us, and — if you allow notifications — carries each notification to your phone. Expo receives your phone's notification token and the title and first line of the notification, and passes them to Apple or Google to deliver.</li>
+          <li><strong>Apple and Google</strong>: deliver the app to your device through their app stores, and deliver notifications you have allowed to your phone.</li>
           <li><strong>GitHub</strong>: hosts this website.</li>
         </ul>
       </li>
