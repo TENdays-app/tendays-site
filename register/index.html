@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Source register — TENdays</title>
+<link rel="icon" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/style.css">
+<style>
+/* The register is a working tool on the site's tokens: same cream, cocoa and
+   one Bunting red; status colours (green / amber / brick / grey / plum) are
+   semantic and separate from the accent. */
+:root{
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --ok:#2B7A4B; --ok-bg:#E3F0E7;
+  --soon:#9A6B14; --soon-bg:#F7EBCF;
+  --late:#A62E1F; --late-bg:#FAE4DC;
+  --none:#6B5E4C; --none-bg:#EFE7DA;
+  --flag:#6E3B93; --flag-bg:#EFE4F5;
+  --cols:6px minmax(0,1fr) 150px 150px 132px;
+}
+/* The site's own rules (.btn, .auth form) set display, which would beat the
+   browser's default for the hidden attribute — so hidden wins explicitly. */
+[hidden]{display:none !important}
+.page{padding:2rem 0 5rem}
+.reg .wrap{max-width:74rem}
+body{font-size:15px}
+h1{font-size:clamp(1.9rem,4vw,2.6rem);margin:0}
+.lede{font-size:1.05rem;margin:.5rem 0 0;max-width:48rem}
+.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1.5rem 2.5rem;align-items:start}
+.eyebrow{font-weight:600;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--caption);margin-bottom:.5rem}
+.meta{margin:.75rem 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.35rem 1.1rem;font-family:var(--mono);font-size:.8rem;color:var(--caption)}
+.meta b{color:var(--cocoa);font-weight:500}
+.panel{background:var(--card);border:1px solid var(--line-card);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.6rem;min-width:280px}
+.panel .who{font-size:.9rem;color:var(--muted)}
+.panel .who b{color:var(--cocoa);font-weight:600}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn.small{padding:.55rem .9rem;font-size:.92rem}
+#savestate{font-family:var(--mono);font-size:.8rem;color:var(--caption);min-height:1.2em}
+#savestate[data-kind=ok]{color:var(--ok)}
+#savestate[data-kind=busy]{color:var(--soon)}
+#savestate[data-kind=err]{color:var(--late)}
+.how{margin:1.25rem 0 0;max-width:48rem}
+.how summary{cursor:pointer;color:var(--jam);font-weight:500}
+.how p{margin:.5rem 0 0}
+
+/* auth */
+.auth{max-width:30rem;margin:2rem auto 0}
+.auth form{display:grid;gap:.75rem;margin-top:1rem}
+.auth label{display:grid;gap:.3rem;font-size:.9rem;color:var(--muted)}
+.auth input{padding:.7rem .8rem;border:1px solid var(--line-card);border-radius:var(--r-md);background:var(--icing);font:inherit;font-size:1rem;color:var(--cocoa)}
+#human-check{min-height:0}
+.notice.err{margin-top:.75rem}
+.linkbtn{border:0;background:none;padding:0;cursor:pointer;color:var(--jam);font:inherit;font-size:.9rem;text-decoration:underline}
+
+/* tally */
+.tally{display:grid;grid-template-columns:repeat(5,1fr);margin:1.5rem 0 0;border:1px solid var(--line-card);background:var(--card);border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow-card)}
+.tally button{position:relative;border:0;border-left:1px solid var(--line-card);background:none;padding:.9rem 1rem 1.1rem;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:.1rem;font:inherit;color:inherit}
+.tally button:first-child{border-left:0}
+.tally button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--st)}
+.tally button[aria-pressed=true]{background:var(--st-bg)}
+.tally .n{font-family:var(--display);font-weight:700;font-size:1.8rem;line-height:1;font-variant-numeric:tabular-nums}
+.tally .l{font-size:.82rem;color:var(--muted)}
+
+/* filters */
+.filters{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:1.25rem 0 0}
+.filters .chip{cursor:pointer;font:inherit;font-size:.9rem;color:var(--cocoa)}
+.filters .chip[aria-pressed=true]{background:var(--cocoa);color:var(--icing);border-color:var(--cocoa)}
+.filters .retired-toggle{display:inline-flex;align-items:center;gap:.4rem;cursor:pointer}
+.row .says{margin:.5rem 0 .25rem}
+.filters input[type=search]{margin-left:auto;padding:.5rem .9rem;border:1px solid var(--line-card);border-radius:var(--r-pill);background:var(--card);min-width:16rem;font:inherit;font-size:.92rem}
+
+[data-status=ok]{--st:var(--ok);--st-bg:var(--ok-bg)}
+[data-status=soon]{--st:var(--soon);--st-bg:var(--soon-bg)}
+[data-status=late]{--st:var(--late);--st-bg:var(--late-bg)}
+[data-status=none]{--st:var(--none);--st-bg:var(--none-bg)}
+[data-status=flag]{--st:var(--flag);--st-bg:var(--flag-bg)}
+
+/* register */
+.cols{display:grid;grid-template-columns:var(--cols);position:sticky;top:64px;z-index:2;background:var(--icing);margin:1.5rem 0 0;padding:.5rem 0 .4rem;border-bottom:1px solid var(--line);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--caption)}
+.cols div{padding:0 .9rem}
+.cols div:first-child{padding:0}
+.group{margin:1.75rem 0 0}
+.group h2{display:flex;align-items:baseline;gap:.75rem;margin:0;font-size:1.3rem}
+.group .area{font-family:var(--body);font-weight:600;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--caption);border:1px solid var(--line-card);padding:.2rem .45rem;border-radius:4px;white-space:nowrap;letter-spacing:.06em}
+.group .gtally{margin-left:auto;font-family:var(--mono);font-size:.78rem;color:var(--caption);white-space:nowrap}
+.says{margin:.6rem 0 0;padding:.8rem 1rem;background:var(--oat);border-radius:var(--r-md);font-size:.92rem}
+.says .says-h{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem}
+.says ol{margin:0;padding-left:1.4rem;display:grid;gap:.2rem}
+.says li{color:var(--cocoa)}
+.says li .tag{font-family:var(--mono);font-size:.72rem;color:var(--caption);margin-right:.35rem}
+.rows{margin:.6rem 0 0;background:var(--card);border:1px solid var(--line-card);border-radius:var(--r-card);overflow:hidden;box-shadow:var(--shadow-card)}
+.row{display:grid;grid-template-columns:var(--cols);border-top:1px solid var(--line-card)}
+.row:first-child{border-top:0}
+.row[hidden]{display:none}
+.stripe{background:var(--st)}
+.what{padding:.75rem .9rem;min-width:0}
+.claim{font-size:.98rem;line-height:1.45}
+.row[data-kind=source] .claim{font-size:.9rem;color:var(--muted)}
+.row[data-kind=source] .srcname{font-size:1.02rem;color:var(--cocoa);font-weight:600}
+.kindtag{display:inline-block;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--caption);border:1px solid var(--line-card);padding:.05rem .35rem;border-radius:3px;margin-right:.5rem;vertical-align:2px}
+.src{margin-top:.25rem;font-size:.88rem;color:var(--muted);overflow-wrap:anywhere}
+.unconf{display:inline-block;margin-left:.4rem;font-size:.66rem;letter-spacing:.04em;text-transform:uppercase;color:var(--soon);border-bottom:1px dashed var(--soon);cursor:help}
+.hint{margin-top:.25rem;font-size:.85rem;color:var(--caption)}
+.latestnote{margin-top:.35rem;font-size:.88rem;color:var(--cocoa);background:var(--oat);padding:.4rem .6rem;border-radius:6px}
+details.more{margin-top:.4rem}
+details.more summary{display:inline;list-style:none;cursor:pointer;font-size:.85rem;color:var(--jam)}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:" ▾"}
+details.more[open] summary::after{content:" ▴"}
+.morebody{display:grid;gap:.6rem;margin:.6rem 0 .25rem;padding:.8rem;background:var(--icing);border-radius:var(--r-md)}
+.fld{display:grid;gap:.25rem;font-size:.82rem;color:var(--muted)}
+.fld input,.fld textarea{padding:.5rem .6rem;border:1px solid var(--line-card);border-radius:6px;background:var(--card);font:inherit;font-size:.9rem;color:var(--cocoa);resize:vertical}
+.morebody .btnrow{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.history{margin:0;padding:0;list-style:none;display:grid;gap:.2rem;font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.history li b{color:var(--cocoa);font-weight:500}
+.when,.due{padding:.75rem .9rem;border-left:1px solid var(--line-card);font-family:var(--mono);font-size:.8rem;font-variant-numeric:tabular-nums}
+.date{color:var(--cocoa)}
+.date.muted{color:var(--caption)}
+.sub{margin-top:.15rem;font-size:.74rem;color:var(--caption)}
+.chipst{display:inline-block;margin-top:.4rem;padding:.25rem .45rem;border-radius:4px;font-family:var(--body);font-weight:600;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;background:var(--st-bg);color:var(--st)}
+.tick{padding:.65rem .9rem;border-left:1px solid var(--line-card);display:flex;flex-direction:column;align-items:flex-start;gap:.35rem}
+.box{width:34px;height:34px;border:2px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer;display:grid;place-items:center;color:transparent;font-weight:700;font-size:1.15rem;line-height:1}
+.box:hover{border-color:var(--ok)}
+.box[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#fff}
+.box:disabled{opacity:.5;cursor:wait}
+.ticklbl{font-size:.74rem;color:var(--caption)}
+body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
+.empty{margin:1.75rem 0 0;padding:1.5rem;text-align:center;color:var(--muted);background:var(--card);border:1px dashed var(--line-card);border-radius:var(--r-card)}
+.foot{margin:2.5rem 0 0;font-family:var(--mono);font-size:.76rem;color:var(--caption)}
+:focus-visible{outline:2px solid var(--jam);outline-offset:2px}
+
+@media (max-width:880px){
+  :root{--cols:6px minmax(0,1fr)}
+  .topbar{grid-template-columns:1fr}
+  .tally{grid-template-columns:repeat(2,1fr)}
+  .tally button{border-left:0;border-top:1px solid var(--line-card)}
+  .tally button:nth-child(-n+2){border-top:0}
+  .tally button:nth-child(2n){border-left:1px solid var(--line-card)}
+  .cols{display:none}
+  .stripe{grid-row:1 / span 4}
+  .when,.due,.tick{grid-column:2;border-left:0;border-top:1px dashed var(--line-card)}
+  .when::before{content:"Last verified";display:block;font-family:var(--body);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--caption);margin-bottom:.1rem}
+  .due::before{content:"Next due";display:block;font-family:var(--body);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--caption);margin-bottom:.1rem}
+  .filters input[type=search]{margin-left:0;width:100%}
+}
+@media print{
+  :root{--cols:6px minmax(0,1fr) 150px 150px}
+  body{background:#fff;color:#000;font-size:12px}
+  .site-header,.site-footer,.panel,.filters,.how,.tick,.unconf,details.more,.cols{display:none}
+  .page{padding:0}
+  .tally,.rows{box-shadow:none}
+  .row[hidden]{display:grid !important}
+  .group[hidden]{display:block !important}
+  .row{break-inside:avoid}
+  .group h2{break-after:avoid}
+  .says{background:none;border:1px solid #ccc}
+  a{color:#000;text-decoration:none}
+  .src a::after{content:" (" attr(href) ")";font-size:9px;color:#444}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="lockup" href="/"><img src="/assets/mark.svg" alt="" width="42" height="15"><span>TENdays</span></a>
+    <nav class="nav" aria-label="Site">
+      <a href="/">Back to tendays.app</a>
+      <button type="button" class="btn btn-secondary small" id="signout" hidden>Sign out</button>
+    </nav>
+  </div>
+</header>
+
+<main class="page reg">
+  <div class="wrap">
+
+    <section id="auth" class="card auth" hidden>
+      <div class="eyebrow">Internal</div>
+      <h1>Source register</h1>
+      <p class="lede">Sign in with the email you use in the TENdays app. Only accounts on the register’s editor list can see it.</p>
+      <form id="f-email">
+        <label>Email <input type="email" id="email" required autocomplete="email" inputmode="email"></label>
+        <div id="human-check"></div>
+        <button class="btn btn-primary" type="submit" id="b-email">Email me a code</button>
+      </form>
+      <form id="f-code" hidden>
+        <p class="muted">We’ve emailed a code to <b id="sent-to"></b>. It works for a few minutes.</p>
+        <label>Code <input id="code" inputmode="numeric" autocomplete="one-time-code" required></label>
+        <button class="btn btn-primary" type="submit" id="b-code">Sign in</button>
+        <button type="button" class="linkbtn" id="back">Use a different email</button>
+      </form>
+      <p id="auth-err" class="notice err" hidden></p>
+    </section>
+
+    <section id="msg" class="card" hidden></section>
+
+    <section id="app" hidden>
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Internal · source verification</div>
+          <h1>Source register</h1>
+          <p class="lede">Every statement the app makes about safety, food, licensing or the law — the document it rests on, and when a person last opened that document and confirmed it still says so.</p>
+          <ul class="meta" id="meta"></ul>
+          <details class="how">
+            <summary>How to use this register</summary>
+            <p>Each hazard block shows <em>what the app says</em> — its hazard line, advice and every control — and below it the sources it cites. For each source, open the link, read the relevant part, and check the app’s lines against it. If they agree, <strong>tick the box</strong> on that source’s row: the database records who ticked it and when, and the next check falls due twelve months later. If the source says something different, open <em>Notes, link and history</em>, write what you found and press <strong>Doesn’t match</strong> — that flags the claim purple for a rewrite. A link marked <em>unconfirmed</em> is a best guess until a check confirms it or you save a better one. Nothing recorded here can be edited or deleted afterwards, and <em>Export CSV</em> gives the whole register as a spreadsheet — that is the evidence.</p>
+          </details>
+        </div>
+        <div class="panel">
+          <div class="who">Checks are recorded as <b id="who"></b></div>
+          <div class="actions">
+            <button class="btn btn-primary small" id="export" type="button">Export CSV</button>
+            <button class="btn btn-secondary small" id="print" type="button">Print</button>
+          </div>
+          <div id="savestate" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="tally" id="tally" role="group" aria-label="Summary">
+        <button type="button" data-filter="ok" data-status="ok"><span class="n">0</span><span class="l">In date</span></button>
+        <button type="button" data-filter="soon" data-status="soon"><span class="n">0</span><span class="l">Due within 60 days</span></button>
+        <button type="button" data-filter="late" data-status="late"><span class="n">0</span><span class="l">Overdue</span></button>
+        <button type="button" data-filter="none" data-status="none"><span class="n">0</span><span class="l">Never verified</span></button>
+        <button type="button" data-filter="flag" data-status="flag"><span class="n">0</span><span class="l">Needs a change</span></button>
+      </div>
+
+      <div class="filters" id="filters">
+        <button type="button" class="chip" data-filter="all">All</button>
+        <button type="button" class="chip" data-filter="attention">Needs attention</button>
+        <button type="button" class="chip" data-filter="verified">Verified</button>
+        <button type="button" class="chip" data-filter="legal">Legal — solicitor</button>
+        <label class="chip retired-toggle"><input type="checkbox" id="retired"> Show retired claims</label>
+        <input type="search" id="q" placeholder="Search claims, sources and wording" aria-label="Search claims, sources and wording">
+      </div>
+
+      <div class="cols" aria-hidden="true"><div></div><div>Source and claim</div><div>Last verified</div><div>Next due</div><div>Verified</div></div>
+      <div id="register"></div>
+      <div class="empty" id="empty" hidden>Nothing matches this view.</div>
+      <p class="foot" id="foot"></p>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div>© 2026 TENdays · <a href="mailto:hello@tendays.app">hello@tendays.app</a></div>
+    <nav aria-label="Legal">
+      <a href="/privacy/">Privacy</a>
+      <a href="/delete-account/">Delete your account</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js"></script>
+<script>
+(function () {
+  // Public values — the same ones every copy of the app ships with.
+  var SUPABASE_URL = 'https://igruxucsnxsborffmrwp.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_m62ZgeIbk9VZ0SPWDTX1Dw_2rwQWvvL';
+  var TURNSTILE_SITE_KEY = '0x4AAAAAAEmA_OJCtsEsChZj';
+  var TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'tendays-register' }
+  });
+
+  var $ = function (s) { return document.querySelector(s); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function safeHref(u) { return /^https?:\/\//i.test(u || '') ? u : ''; }
+  var LONDON = 'Europe/London';
+  var fmtD = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: LONDON });
+  var fmtT = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: LONDON });
+  var STATUS = { in_date: 'ok', due_soon: 'soon', overdue: 'late', never: 'none', needs_change: 'flag' };
+  var LABEL = { ok: 'In date', soon: 'Due soon', late: 'Overdue', none: 'Never verified', flag: 'Needs a change' };
+  var OUTCOME = { verified: 'Verified', cleared: 'Tick cleared', mismatch: 'Doesn’t match', note: 'Note' };
+
+  function show(id) {
+    ['auth', 'msg', 'app'].forEach(function (k) { $('#' + k).hidden = k !== id; });
+    $('#signout').hidden = id === 'auth';
+  }
+  function message(html) { $('#msg').innerHTML = html; show('msg'); }
+  function isMissing(e) { return e && (e.code === 'PGRST205' || e.code === '42P01' || /schema cache|does not exist/i.test(e.message || '')); }
+
+  // ----- the human check (Cloudflare Turnstile), rendered only when needed -----
+  var tsApi = null, tsId = null, tsPending = null;
+  function loadTurnstile() {
+    return new Promise(function (resolve, reject) {
+      if (window.turnstile) return resolve(window.turnstile);
+      window.__tsReady = function () { window.turnstile ? resolve(window.turnstile) : reject(new Error('Turnstile loaded without an API')); };
+      var s = document.createElement('script');
+      s.src = TURNSTILE_SCRIPT + '&onload=__tsReady'; s.async = true; s.defer = true;
+      s.onerror = function () { reject(new Error('Turnstile script failed to load')); };
+      document.head.appendChild(s);
+    });
+  }
+  function settle(token, err) {
+    var p = tsPending; if (!p) return; tsPending = null; clearTimeout(p.timer);
+    token ? p.resolve(token) : p.reject(err || new Error('Human check failed'));
+  }
+  function getToken() {
+    if (!TURNSTILE_SITE_KEY) return Promise.resolve(undefined);
+    // Bound the script load too: a stalled network would otherwise leave the
+    // button disabled for ever with no message (the app had this bug once).
+    var loadTimeout = new Promise(function (_, reject) { setTimeout(function () { reject(new Error('Human check timed out')); }, 30000); });
+    return Promise.race([loadTurnstile(), loadTimeout]).then(function (api) {
+      tsApi = api;
+      if (tsId === null) {
+        tsId = api.render(document.getElementById('human-check'), {
+          sitekey: TURNSTILE_SITE_KEY, execution: 'execute', appearance: 'interaction-only', theme: 'light', size: 'flexible',
+          callback: function (t) { settle(t); },
+          'error-callback': function (code) {
+            if (!/^(1101|1102|2001|400)/.test(String(code || ''))) return false;
+            settle(undefined, new Error('Turnstile ' + code)); return true;
+          },
+          'expired-callback': function () {}
+        });
+      }
+      return new Promise(function (resolve, reject) {
+        settle(undefined, new Error('Superseded'));
+        tsPending = { resolve: resolve, reject: reject, timer: setTimeout(function () { settle(undefined, new Error('Human check timed out')); }, 30000) };
+        api.reset(tsId); api.execute(tsId);
+      });
+    });
+  }
+  function resetTurnstile() { if (tsApi && tsId !== null) { try { tsApi.reset(tsId); } catch (e) {} } }
+
+  // ----- sign in: email code, same as the app -----
+  function authErr(t) { var el = $('#auth-err'); el.textContent = t || ''; el.hidden = !t; }
+  $('#f-email').addEventListener('submit', function (ev) {
+    ev.preventDefault(); authErr('');
+    var email = $('#email').value.trim(); if (!email) return;
+    var btn = $('#b-email'); btn.disabled = true;
+    getToken().then(function (token) {
+      return sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false, captchaToken: token } }).then(function (r) {
+        resetTurnstile();
+        if (r.error) {
+          var m = r.error.message || '';
+          if (/signups not allowed|not found/i.test(m)) authErr('There is no TENdays account with that email. Use the address you sign into the app with.');
+          else if (/captcha/i.test(m)) authErr('The sign-in check was refused — reload the page and try again.');
+          else authErr(m);
+          return;
+        }
+        $('#sent-to').textContent = email;
+        $('#f-email').hidden = true; $('#f-code').hidden = false; $('#code').focus();
+      });
+    }).catch(function (e) {
+      var m = String(e && e.message || '');
+      if (/110200/.test(m)) authErr('This page’s address isn’t allowed by the sign-in check yet. In Cloudflare → Turnstile → the TENdays widget → Hostname management, add tendays.app.');
+      else authErr('Couldn’t confirm you’re not a robot — check your connection and try again.');
+    }).then(function () { btn.disabled = false; });
+  });
+  $('#f-code').addEventListener('submit', function (ev) {
+    ev.preventDefault(); authErr('');
+    var email = $('#sent-to').textContent, code = $('#code').value.trim();
+    if (code.length < 6) { authErr('Enter the code from the email.'); return; }
+    var btn = $('#b-code'); btn.disabled = true;
+    sb.auth.verifyOtp({ email: email, token: code, type: 'email' }).then(function (r) {
+      btn.disabled = false;
+      if (r.error) { authErr(/expired|invalid/i.test(r.error.message) ? 'That code has expired or isn’t right. Ask for a new one.' : r.error.message); return; }
+      // onAuthStateChange takes it from here
+    });
+  });
+  $('#back').addEventListener('click', function () { $('#f-code').hidden = true; $('#f-email').hidden = false; $('#code').value = ''; authErr(''); });
+  // Local scope: signing out of this page must not sign Will out of the app
+  // on his phone (the default scope revokes every session for the account).
+  $('#signout').addEventListener('click', function () { sb.auth.signOut({ scope: 'local' }); });
+
+  // ----- the register -----
+  var ROWS = [], BY_ID = {}, ROLE = 'viewer', ME = null;
+  function statusKey(r) { return STATUS[r.status] || 'none'; }
+
+  function srcHTML(r) {
+    var link = safeHref(r.link);
+    var name = link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(r.source) + '</a>' : esc(r.source);
+    var extra = '';
+    if (link && !r.link_confirmed) extra = '<span class="unconf" title="A suggested link, not yet confirmed. A tick confirms it; or save a better one under Notes, link and history.">link unconfirmed</span>';
+    if (!link) extra = '<span class="unconf" title="No single web page for this source yet. Save one under Notes, link and history if you find it.">no link yet</span>';
+    if (r.kind === 'source') return '<span class="srcname">' + name + '</span>' + extra;
+    return 'Source: ' + name + extra;
+  }
+  function whenHTML(r) {
+    if (!r.last_verified_at) return '<div class="date muted">—</div><div class="sub">never</div>';
+    var d = new Date(r.last_verified_at);
+    return '<div class="date">' + fmtD.format(d) + '</div><div class="sub" title="' + esc(r.last_verified_by_email || '') + '">' + fmtT.format(d) + ' · ' + esc(r.last_verified_by || '') + (r.times_verified > 1 ? ' · ' + r.times_verified + ' checks' : '') + '</div>';
+  }
+  function dueHTML(r) {
+    var d = r.next_due_at ? '<div class="date">' + fmtD.format(new Date(r.next_due_at)) + '</div>' : '<div class="date muted">—</div>';
+    return d + '<span class="chipst">' + LABEL[statusKey(r)] + '</span>';
+  }
+  function tickHTML(r) {
+    var on = !!r.last_verified_at;
+    return '<button type="button" class="box" aria-pressed="' + on + '" aria-label="' + (on ? 'Verified — press to clear the tick' : 'Mark as verified') + '">✓</button>' +
+      (on ? '<button type="button" class="linkbtn again">Verify again</button>' : '<span class="ticklbl">Tick when checked</span>');
+  }
+  function rowHTML(r, ownWording) {
+    var tag = (r.active === false ? '<span class="kindtag">Retired</span>' : '') +
+      (r.kind === 'figure' ? '<span class="kindtag">Figure</span>' : r.kind === 'legal' ? '<span class="kindtag">Legal</span>' : '');
+    var claim = r.kind === 'source'
+      ? '<div class="src">' + srcHTML(r) + '</div><div class="claim">' + tag + esc(r.claim) + '</div>'
+      : '<div class="claim">' + tag + esc(r.claim) + '</div><div class="src">' + srcHTML(r) + '</div>';
+    // A block's wording is shown once above its rows; a row whose wording is
+    // its own (the legal and guidance claims) carries it here instead.
+    if (ownWording && r.wording) claim += saysHTML(r.wording);
+    return '<div class="row" data-id="' + esc(r.id) + '" data-kind="' + esc(r.kind) + '" data-status="' + statusKey(r) + '">' +
+      '<div class="stripe"></div>' +
+      '<div class="what">' + claim +
+        (r.guidance ? '<div class="hint">' + esc(r.guidance) + '</div>' : '') +
+        '<div class="latestnote"' + (r.latest_note ? '' : ' hidden') + '>' + esc(r.latest_note || '') + '</div>' +
+        '<details class="more"><summary>Notes, link and history</summary><div class="morebody">' +
+          '<label class="fld">Note<textarea class="note-input" rows="2" maxlength="2000" placeholder="What you checked, what you found"></textarea></label>' +
+          '<label class="fld">Link to the source<input type="url" class="link-input" maxlength="500" value="' + esc(safeHref(r.link)) + '" placeholder="https://…"></label>' +
+          '<div class="btnrow"><button type="button" class="btn btn-secondary small save-note">Save note and link</button>' +
+          '<button type="button" class="btn btn-secondary small mismatch">Doesn’t match — needs a change</button></div>' +
+          '<div><button type="button" class="linkbtn show-history">Show history</button><ul class="history" hidden></ul></div>' +
+        '</div></details>' +
+      '</div>' +
+      '<div class="when">' + whenHTML(r) + '</div>' +
+      '<div class="due">' + dueHTML(r) + '</div>' +
+      '<div class="tick">' + tickHTML(r) + '</div>' +
+    '</div>';
+  }
+  function saysHTML(w) {
+    if (!w) return '';
+    var lines = String(w).split('\n').filter(Boolean);
+    return '<div class="says"><div class="says-h">What the app says — check each line</div><ol>' + lines.map(function (l) {
+      var m = /^(Hazard|Advice|Task|On the day):\s*/.exec(l);
+      var tag = m ? '<span class="tag">' + esc(m[1]) + '</span>' : '';
+      return '<li>' + tag + esc(m ? l.slice(m[0].length) : l) + '</li>';
+    }).join('') + '</ol></div>';
+  }
+
+  var groups = [];
+  function buildGroups() {
+    groups = []; var by = {};
+    ROWS.forEach(function (r) {
+      if (!by[r.where_in_app]) { by[r.where_in_app] = { where: r.where_in_app, area: r.area, items: [] }; groups.push(by[r.where_in_app]); }
+      by[r.where_in_app].items.push(r);
+    });
+    groups.forEach(function (g) {
+      // A hazard block's wording is shared by its source rows (figure rows
+      // carry none) and shown once under the heading; a row whose wording is
+      // its own — the legal and guidance claims, or a retired claim with older
+      // wording — shows it inside the row instead.
+      var w = g.items.filter(function (r) { return live(r) && r.wording; }).map(function (r) { return r.wording; });
+      g.shared = w.length && w.every(function (x) { return x === w[0]; }) ? w[0] : '';
+    });
+  }
+  function renderAll() {
+    buildGroups();
+    $('#register').innerHTML = groups.map(function (g, i) {
+      return '<section class="group" data-g="' + i + '"><h2>' + esc(g.where) + '<span class="area">' + esc(g.area) + '</span><span class="gtally"></span></h2>' +
+        saysHTML(g.shared) + '<div class="rows">' + g.items.map(function (r) { return rowHTML(r, !!r.wording && r.wording !== g.shared); }).join('') + '</div></section>';
+    }).join('');
+    updateTallies(); applyFilter();
+  }
+  function updateRow(fresh) {
+    // One object per claim, updated in place, so ROWS, BY_ID and the groups
+    // never disagree about a row's state.
+    var r = BY_ID[fresh.id];
+    if (r) { Object.assign(r, fresh); } else { r = fresh; BY_ID[r.id] = r; ROWS.push(r); }
+    var row = document.querySelector('.row[data-id="' + r.id + '"]'); if (!row) return;
+    row.dataset.status = statusKey(r);
+    row.querySelector('.src').innerHTML = srcHTML(r);
+    row.querySelector('.when').innerHTML = whenHTML(r);
+    row.querySelector('.due').innerHTML = dueHTML(r);
+    row.querySelector('.tick').innerHTML = tickHTML(r);
+    var ln = row.querySelector('.latestnote'); ln.textContent = r.latest_note || ''; ln.hidden = !r.latest_note;
+    row.querySelector('.link-input').value = safeHref(r.link);
+    updateTallies();
+  }
+  function live(r) { return r.active !== false; }
+  function updateTallies() {
+    // Tallies count the claims the app makes NOW; retired ones are kept for
+    // their history but do not count against the register.
+    var counts = { ok: 0, soon: 0, late: 0, none: 0, flag: 0 };
+    ROWS.filter(live).forEach(function (r) { counts[statusKey(r)]++; });
+    Object.keys(counts).forEach(function (k) { var b = document.querySelector('.tally button[data-filter="' + k + '"] .n'); if (b) b.textContent = counts[k]; });
+    groups.forEach(function (g, i) {
+      var items = g.items.filter(live);
+      var ok = items.filter(function (r) { return statusKey(r) === 'ok'; }).length;
+      var el = document.querySelector('.group[data-g="' + i + '"] .gtally');
+      if (el) el.textContent = items.length ? ok + ' of ' + items.length + ' in date' : 'retired';
+    });
+    var next = null, what = '';
+    ROWS.filter(live).forEach(function (r) { if (r.next_due_at) { var d = new Date(r.next_due_at); if (!next || d < next) { next = d; what = r.where_in_app; } } });
+    var verified = counts.ok + counts.soon + counts.late, retired = ROWS.length - ROWS.filter(live).length;
+    $('#foot').textContent = ROWS.filter(live).length + ' claims · ' + verified + ' currently verified · ' + (next ? 'earliest next check ' + fmtD.format(next) + ' (' + what + ')' : 'no checks recorded yet') + (retired ? ' · ' + retired + ' retired claim' + (retired === 1 ? '' : 's') + ' kept for their history' : '');
+  }
+
+  // per-viewer filter state, kept in this browser only
+  var filter = 'all', q = '', showRetired = false;
+  try { filter = localStorage.getItem('sr-filter') || 'all'; q = localStorage.getItem('sr-q') || ''; showRetired = !!localStorage.getItem('sr-retired'); } catch (e) {}
+  function matches(r) {
+    if (r.active === false && !showRetired) return false;
+    var st = statusKey(r);
+    var ok = filter === 'all' ? true : filter === 'attention' ? st !== 'ok' : filter === 'verified' ? st === 'ok' : filter === 'legal' ? r.kind === 'legal' : st === filter;
+    if (!ok) return false;
+    if (!q) return true;
+    return (r.claim + ' ' + r.source + ' ' + r.where_in_app + ' ' + r.area + ' ' + (r.wording || '')).toLowerCase().indexOf(q) >= 0;
+  }
+  function applyFilter() {
+    var any = false;
+    groups.forEach(function (g, i) {
+      var sec = document.querySelector('.group[data-g="' + i + '"]'); if (!sec) return;
+      var shown = 0;
+      g.items.forEach(function (r) { var row = sec.querySelector('.row[data-id="' + r.id + '"]'); var m = matches(r); row.hidden = !m; if (m) shown++; });
+      sec.hidden = shown === 0; if (shown) any = true;
+    });
+    $('#empty').hidden = any;
+    document.querySelectorAll('[data-filter]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.filter === filter)); });
+    try { localStorage.setItem('sr-filter', filter); localStorage.setItem('sr-q', q); localStorage.setItem('sr-retired', showRetired ? '1' : ''); } catch (e) {}
+  }
+  $('#q').value = q;   // once, at boot — the box keeps whatever is typed after that
+  $('#retired').checked = showRetired;
+  $('#retired').addEventListener('change', function () { showRetired = this.checked; updateTallies(); applyFilter(); });
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-filter]'); if (!b) return;
+    filter = (b.dataset.filter === filter && !b.classList.contains('chip')) ? 'all' : b.dataset.filter;
+    applyFilter();
+  });
+  $('#q').addEventListener('input', function () { q = this.value.trim().toLowerCase(); applyFilter(); });
+
+  // ----- recording: one appended row per action; the database stamps who and when -----
+  function setSave(text, kind) { var el = $('#savestate'); el.textContent = text; el.dataset.kind = kind || ''; }
+  function record(claimId, outcome, extra) {
+    var payload = { claim_id: claimId, outcome: outcome };
+    if (extra && extra.note) payload.note = extra.note;
+    if (extra && extra.link) payload.link = extra.link;
+    setSave('Saving…', 'busy');
+    // The insert returns the row it stamped, so the time shown is the
+    // database's own, for exactly this action.
+    return sb.from('source_checks').insert(payload).select('checked_at').single().then(function (r) {
+      if (r.error) throw r.error;
+      var stamped = r.data && r.data.checked_at ? fmtT.format(new Date(r.data.checked_at)) : '';
+      // Recorded. The re-read below only refreshes the row on screen — if it
+      // fails, the record still stands, so say that rather than "couldn't save".
+      return sb.from('source_register').select('*').eq('id', claimId).single().then(function (r2) {
+        if (r2.error || !r2.data) { setSave('Saved ' + stamped + ' — but this row couldn’t be refreshed. Reload the page to see it.', 'ok'); return null; }
+        updateRow(r2.data);
+        setSave('Saved ' + stamped + ' — recorded by the database', 'ok');
+        return r2.data;
+      });
+    }).catch(function (e) {
+      var m = String(e && e.message || e);
+      if (/row-level security|permission denied/i.test(m)) m = 'this account can’t record checks (not on the editor list)';
+      else if (/JWT|expired/i.test(m)) m = 'your sign-in has expired — sign out and back in';
+      else if (/check constraint/i.test(m)) m = 'the note must be 2,000 characters or fewer and the link 500 or fewer';
+      setSave('Couldn’t save — ' + m, 'err');
+      throw e;
+    });
+  }
+  function loadHistory(row, claimId) {
+    var ul = row.querySelector('.history');
+    sb.from('source_checks').select('checked_at, checked_by_name, checked_by_email, outcome, note, link').eq('claim_id', claimId).order('checked_at', { ascending: false }).order('id', { ascending: false }).then(function (r) {
+      if (r.error) { ul.innerHTML = '<li>' + esc(r.error.message) + '</li>'; ul.hidden = false; return; }
+      ul.innerHTML = r.data.length ? r.data.map(function (h) {
+        var d = new Date(h.checked_at);
+        return '<li>' + fmtD.format(d) + ' ' + fmtT.format(d) + ' · <b>' + esc(OUTCOME[h.outcome] || h.outcome) + '</b> · ' + esc(h.checked_by_name || '') +
+          (h.checked_by_email ? ' &lt;' + esc(h.checked_by_email) + '&gt;' : '') +
+          (h.note ? ' — ' + esc(h.note) : '') + (h.link ? ' — ' + esc(h.link) : '') + '</li>';
+      }).join('') : '<li>No checks recorded for this claim yet.</li>';
+      ul.hidden = false;
+    });
+  }
+  // Clear the note box only if it still holds what was sent — a person may
+  // have started the next note while the save was in flight.
+  function clearSent(row, sent) { var ta = row.querySelector('.note-input'); if (ta && ta.value.trim() === sent) ta.value = ''; }
+  $('#register').addEventListener('click', function (ev) {
+    var row = ev.target.closest('.row'); if (!row) return;
+    var id = row.dataset.id, r = BY_ID[id]; if (!r) return;
+    var btn = ev.target.closest('button');
+    // One press, one row: every recording button is disabled until the
+    // database has answered, so a double-click cannot record twice.
+    function pressed(p) { if (btn) btn.disabled = true; return p.catch(function () {}).then(function () { if (btn && document.contains(btn)) btn.disabled = false; }); }
+    if (ev.target.closest('.box')) {
+      if (ROLE !== 'editor') return;
+      pressed(record(id, r.last_verified_at ? 'cleared' : 'verified'));
+    } else if (ev.target.closest('.again')) {
+      pressed(record(id, 'verified'));
+    } else if (ev.target.closest('.mismatch')) {
+      var note = row.querySelector('.note-input').value.trim();
+      pressed(record(id, 'mismatch', { note: note || null }).then(function () { clearSent(row, note); }));
+    } else if (ev.target.closest('.save-note')) {
+      var n = row.querySelector('.note-input').value.trim(), l = row.querySelector('.link-input').value.trim();
+      if (l && !/^https?:\/\//i.test(l)) { setSave('A link must start with http:// or https://', 'err'); return; }
+      if (l && l === safeHref(r.link)) l = '';   // unchanged — don’t record it again
+      if (!n && !l) { setSave('Nothing to save — write a note or change the link first', 'err'); return; }
+      pressed(record(id, 'note', { note: n || null, link: l || null }).then(function () { clearSent(row, n); }));
+    } else if (ev.target.closest('.show-history')) {
+      loadHistory(row, id);
+    }
+  });
+
+  // ----- export and print -----
+  function csvText() {
+    var head = ['Ref', 'Active', 'Where in the app', 'Area', 'Type', 'Claim', 'Source', 'Link', 'Link confirmed', 'Status', 'Last verified (Europe/London)', 'Last verified (UTC)', 'Verified by', 'Verified by (sign-in email)', 'Times verified', 'Next due', 'Latest note', 'What the app says'];
+    var rows = [head];
+    ROWS.forEach(function (r) {
+      var lv = r.last_verified_at ? new Date(r.last_verified_at) : null;
+      rows.push([r.id, r.active === false ? 'retired' : 'yes', r.where_in_app, r.area, r.kind, r.claim, r.source, r.link || '', r.link_confirmed ? 'yes' : 'no', LABEL[statusKey(r)],
+        lv ? fmtD.format(lv) + ' ' + fmtT.format(lv) : '', r.last_verified_at || '', r.last_verified_by || '', r.last_verified_by_email || '', r.times_verified,
+        r.next_due_at ? fmtD.format(new Date(r.next_due_at)) : '', r.latest_note || '', r.wording || '']);
+    });
+    return '﻿' + rows.map(function (row) {
+      return row.map(function (v) {
+        v = String(v == null ? '' : v);
+        if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;   // never let a typed note run as a spreadsheet formula
+        return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      }).join(',');
+    }).join('\r\n');
+  }
+  $('#export').addEventListener('click', function () {
+    var today = new Date().toISOString().slice(0, 10);
+    var blob = new Blob([csvText()], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tendays-source-register-' + today + '.csv';
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    setSave('Exported tendays-source-register-' + today + '.csv', 'ok');
+  });
+  $('#print').addEventListener('click', function () { window.print(); });
+
+  // ----- boot -----
+  function loadRegister() {
+    return sb.from('source_editors').select('role').maybeSingle().then(function (r) {
+      if (r.error) {
+        if (isMissing(r.error)) return message('<h2>Not ready yet</h2><p>The database update for the register (migration 0069) hasn’t been applied. Paste it into the Supabase SQL editor, run the drift checker, then reload this page.</p>');
+        return message('<h2>Couldn’t load the register</h2><p>' + esc(r.error.message) + '</p>');
+      }
+      if (!r.data) return message('<h2>Not on the list</h2><p>This account (<b>' + esc(ME.email || '') + '</b>) isn’t on the register’s editor list. Sign out and sign in with the email you use in the TENdays app — or add this account with one line in the Supabase SQL editor (see the header of migration 0069).</p>');
+      ROLE = r.data.role;
+      document.body.classList.toggle('viewer', ROLE !== 'editor');
+      return sb.from('source_register').select('*').order('sort').then(function (r2) {
+        if (r2.error) return message('<h2>Couldn’t load the register</h2><p>' + esc(r2.error.message) + '</p>');
+        ROWS = r2.data || []; BY_ID = {}; ROWS.forEach(function (x) { BY_ID[x.id] = x; });
+        var meta = ROWS[0] || {};
+        $('#meta').innerHTML = '<li><b>' + ROWS.filter(live).length + '</b> claims</li>' +
+          (meta.content_version ? '<li>content version <b>' + esc(meta.content_version) + '</b></li>' : '') +
+          '<li>re-check every <b>12 months</b>, sooner if a source changes</li>' +
+          '<li>signed in as <b>' + esc(ME.email || '') + '</b>' + (ROLE !== 'editor' ? ' (read only)' : '') + '</li>';
+        $('#who').textContent = ME.email || '';
+        setSave(ROLE === 'editor' ? 'Every tick is stamped by the database' : 'Read-only view', '');
+        show('app'); renderAll();
+      });
+    });
+  }
+  var booted = false;
+  function boot(session) {
+    ME = session ? session.user : null;
+    if (!ME) {
+      // nothing of the last person's register (or their half-typed notes)
+      // stays in the page for the next one
+      $('#register').innerHTML = ''; ROWS = []; BY_ID = {}; groups = [];
+      show('auth'); return;
+    }
+    loadRegister();
+  }
+  function resetAuthForms() { $('#f-code').hidden = true; $('#f-email').hidden = false; $('#code').value = ''; }
+  sb.auth.getSession().then(function (r) { booted = true; boot(r.data.session); });
+  // supabase-js fires SIGNED_IN again every time the tab regains focus (it
+  // re-checks the stored session) — and coming back from a source tab is the
+  // whole workflow here, so only a real change of person reboots the page.
+  sb.auth.onAuthStateChange(function (ev, session) {
+    if (!booted) return;
+    if (ev === 'SIGNED_OUT') { resetAuthForms(); boot(null); return; }
+    if (ev === 'SIGNED_IN' && session && (!ME || session.user.id !== ME.id)) { resetAuthForms(); boot(session); }
+  });
+  window.addEventListener('beforeunload', function (e) {
+    if ($('#app').hidden) return;
+    var typing = [].some.call(document.querySelectorAll('.note-input'), function (t) { return t.value.trim(); });
+    if (typing) { e.preventDefault(); e.returnValue = ''; }
+  });
+})();
+</script>
+</body>
+</html>
