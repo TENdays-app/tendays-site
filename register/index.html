@@ -72,6 +72,12 @@ h1{font-size:clamp(1.9rem,4vw,2.6rem);margin:0}
 .filters .chip{cursor:pointer;font:inherit;font-size:.9rem;color:var(--cocoa)}
 .filters .chip[aria-pressed=true]{background:var(--cocoa);color:var(--icing);border-color:var(--cocoa)}
 .filters .retired-toggle{display:inline-flex;align-items:center;gap:.4rem;cursor:pointer}
+.srcgroup{margin:.5rem 0 1rem;border-left:3px solid var(--line-card);padding-left:.7rem}
+.srchead{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.35rem 0 .2rem;font-size:.92rem}
+.srchead .srcname a{font-weight:600}
+.srccount{color:var(--caption);font-size:.8rem}
+.srchead .tick-all{margin-left:auto}
+body.viewer .tick-all{display:none}
 .row .says{margin:.5rem 0 .25rem}
 .filters input[type=search]{margin-left:auto;padding:.5rem .9rem;border:1px solid var(--line-card);border-radius:var(--r-pill);background:var(--card);min-width:16rem;font:inherit;font-size:.92rem}
 
@@ -209,7 +215,7 @@ body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
           <ul class="meta" id="meta"></ul>
           <details class="how">
             <summary>How to use this register</summary>
-            <p>Each hazard block shows <em>what the app says</em> — its hazard line, advice and every control — and below it the sources it cites. For each source, open the link, read the relevant part, and check the app’s lines against it. If they agree, <strong>tick the box</strong> on that source’s row: the database records who ticked it and when, and the next check falls due twelve months later. If the source says something different, open <em>Notes, link and history</em>, write what you found and press <strong>Doesn’t match</strong> — that flags the claim purple for a rewrite. A link marked <em>unconfirmed</em> is a best guess until a check confirms it or you save a better one. Nothing recorded here can be edited or deleted afterwards, and <em>Export CSV</em> gives the whole register as a spreadsheet — that is the evidence.</p>
+            <p>Each hazard block lists every line the app says, grouped under the source that supports it. Open a source’s link once, then for each line beneath it find the passage named in <em>Look for</em> and <strong>tick</strong> that line: the database records who ticked it and when, and the next check falls due twelve months later. <em>Tick all under this link</em> records one tick per line, for when you have read them all. If the source says something different, open <em>Notes, link and history</em> under that line, write what you found and press <strong>Doesn’t match</strong> — that flags the line purple and it gets rewritten. Lines under <em>No source found yet</em> are the ones no document has been found for: paste a link if you find one, or flag them so they are reworded or dropped. Lines of plain good practice are not listed. A link marked <em>unconfirmed</em> is a best guess until a tick confirms it. Nothing recorded here can be edited or deleted afterwards, and <em>Export CSV</em> gives the whole register as a spreadsheet — that is the evidence.</p>
           </details>
         </div>
         <div class="panel">
@@ -377,14 +383,26 @@ body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
   var ROWS = [], BY_ID = {}, ROLE = 'viewer', ME = null;
   function statusKey(r) { return STATUS[r.status] || 'none'; }
 
-  function srcHTML(r) {
+  var NO_SOURCE = 'No source found yet';
+  function srcHTML(r, inGroup) {
     var link = safeHref(r.link);
     var name = link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(r.source) + '</a>' : esc(r.source);
     var extra = '';
     if (link && !r.link_confirmed) extra = '<span class="unconf" title="A suggested link, not yet confirmed. A tick confirms it; or save a better one under Notes, link and history.">link unconfirmed</span>';
     if (!link) extra = '<span class="unconf" title="No single web page for this source yet. Save one under Notes, link and history if you find it.">no link yet</span>';
+    // Inside a source group the heading carries the link; the row keeps only
+    // the "unconfirmed" / "no link" note.
+    if (inGroup) return extra ? '<span class="srcname">' + extra + '</span>' : '';
     if (r.kind === 'source') return '<span class="srcname">' + name + '</span>' + extra;
     return 'Source: ' + name + extra;
+  }
+  function sourceKey(r) { return r.source + '\u0001' + (safeHref(r.link) || ''); }
+  function srcHeadHTML(sg) {
+    var link = safeHref(sg.link);
+    var name = link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(sg.source) + '</a>' : esc(sg.source);
+    var n = sg.items.length;
+    return '<div class="srchead"><span class="srcname">' + name + '</span><span class="srccount">' + n + (n === 1 ? ' line' : ' lines') + '</span>' +
+      (link && n > 1 ? '<button type="button" class="btn btn-secondary small tick-all" title="Records one tick per line below — read them all first">Tick all under this link</button>' : '') + '</div>';
   }
   function whenHTML(r) {
     if (!r.last_verified_at) return '<div class="date muted">—</div><div class="sub">never</div>';
@@ -400,10 +418,12 @@ body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
     return '<button type="button" class="box" aria-pressed="' + on + '" aria-label="' + (on ? 'Verified — press to clear the tick' : 'Mark as verified') + '">✓</button>' +
       (on ? '<button type="button" class="linkbtn again">Verify again</button>' : '<span class="ticklbl">Tick when checked</span>');
   }
-  function rowHTML(r, ownWording) {
+  function rowHTML(r, ownWording, inGroup) {
     var tag = (r.active === false ? '<span class="kindtag">Retired</span>' : '') +
       (r.kind === 'figure' ? '<span class="kindtag">Figure</span>' : r.kind === 'legal' ? '<span class="kindtag">Legal</span>' : '');
-    var claim = r.kind === 'source'
+    var claim = inGroup
+      ? '<div class="claim">' + tag + esc(r.claim) + '</div><div class="src">' + srcHTML(r, true) + '</div>'
+      : r.kind === 'source'
       ? '<div class="src">' + srcHTML(r) + '</div><div class="claim">' + tag + esc(r.claim) + '</div>'
       : '<div class="claim">' + tag + esc(r.claim) + '</div><div class="src">' + srcHTML(r) + '</div>';
     // A block's wording is shown once above its rows; a row whose wording is
@@ -456,8 +476,19 @@ body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
   function renderAll() {
     buildGroups();
     $('#register').innerHTML = groups.map(function (g, i) {
+      // Per-line rows (no wording of their own) sit under the source that
+      // supports them, "No source found yet" last; rows that carry their own
+      // wording — the legal and guidance claims, and retired rows — render
+      // as before.
+      var perLine = g.items.filter(function (r) { return !r.wording; }), legacy = g.items.filter(function (r) { return !!r.wording; });
+      var sgs = [], bySrc = {};
+      perLine.forEach(function (r) { var k = sourceKey(r); if (!bySrc[k]) { bySrc[k] = { source: r.source, link: r.link, items: [] }; sgs.push(bySrc[k]); } bySrc[k].items.push(r); });
+      sgs.sort(function (a, b) { return (a.source === NO_SOURCE ? 1 : 0) - (b.source === NO_SOURCE ? 1 : 0); });
       return '<section class="group" data-g="' + i + '"><h2>' + esc(g.where) + '<span class="area">' + esc(g.area) + '</span><span class="gtally"></span></h2>' +
-        saysHTML(g.shared) + '<div class="rows">' + g.items.map(function (r) { return rowHTML(r, !!r.wording && r.wording !== g.shared); }).join('') + '</div></section>';
+        saysHTML(g.shared) +
+        sgs.map(function (sg) { return '<div class="srcgroup">' + srcHeadHTML(sg) + '<div class="rows">' + sg.items.map(function (r) { return rowHTML(r, false, true); }).join('') + '</div></div>'; }).join('') +
+        (legacy.length ? '<div class="rows">' + legacy.map(function (r) { return rowHTML(r, !!r.wording && r.wording !== g.shared); }).join('') + '</div>' : '') +
+        '</section>';
     }).join('');
     updateTallies(); applyFilter();
   }
@@ -468,7 +499,7 @@ body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
     if (r) { Object.assign(r, fresh); } else { r = fresh; BY_ID[r.id] = r; ROWS.push(r); }
     var row = document.querySelector('.row[data-id="' + r.id + '"]'); if (!row) return;
     row.dataset.status = statusKey(r);
-    row.querySelector('.src').innerHTML = srcHTML(r);
+    row.querySelector('.src').innerHTML = srcHTML(r, !!row.closest('.srcgroup'));
     row.querySelector('.when').innerHTML = whenHTML(r);
     row.querySelector('.due').innerHTML = dueHTML(r);
     row.querySelector('.tick').innerHTML = tickHTML(r);
@@ -512,6 +543,7 @@ body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
       var sec = document.querySelector('.group[data-g="' + i + '"]'); if (!sec) return;
       var shown = 0;
       g.items.forEach(function (r) { var row = sec.querySelector('.row[data-id="' + r.id + '"]'); var m = matches(r); row.hidden = !m; if (m) shown++; });
+      sec.querySelectorAll('.srcgroup').forEach(function (sg) { sg.hidden = !sg.querySelector('.row:not([hidden])'); });
       sec.hidden = shown === 0; if (shown) any = true;
     });
     $('#empty').hidden = any;
@@ -574,6 +606,21 @@ body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
   // have started the next note while the save was in flight.
   function clearSent(row, sent) { var ta = row.querySelector('.note-input'); if (ta && ta.value.trim() === sent) ta.value = ''; }
   $('#register').addEventListener('click', function (ev) {
+    // "Tick all under this link": one recorded tick per line still unticked
+    // and currently shown, written one after another so each gets its own
+    // database stamp.
+    var ta = ev.target.closest('.tick-all');
+    if (ta) {
+      if (ROLE !== 'editor') return;
+      var sg = ta.closest('.srcgroup');
+      var ids = Array.prototype.map.call(sg.querySelectorAll('.row:not([hidden])'), function (el) { return el.dataset.id; })
+        .filter(function (id) { var x = BY_ID[id]; return x && x.active !== false && !x.last_verified_at; });
+      if (!ids.length) { setSave('Every line under this link already has a tick', 'ok'); return; }
+      ta.disabled = true;
+      ids.reduce(function (p, id) { return p.then(function () { return record(id, 'verified'); }); }, Promise.resolve())
+        .catch(function () {}).then(function () { if (document.contains(ta)) ta.disabled = false; });
+      return;
+    }
     var row = ev.target.closest('.row'); if (!row) return;
     var id = row.dataset.id, r = BY_ID[id]; if (!r) return;
     var btn = ev.target.closest('button');
