@@ -344,12 +344,21 @@ body.viewer .tick,body.viewer .morebody .btnrow,body.viewer .fld{display:none}
     ev.preventDefault(); authErr('');
     var email = $('#email').value.trim(); if (!email) return;
     var btn = $('#b-email'); btn.disabled = true;
-    getToken().then(function (token) {
+    // A widget that cannot run (Cloudflare down or blocked) does not stop the
+    // request: it goes without a token and the server decides — refused while
+    // captcha enforcement is on, through when it is switched off for an outage.
+    // Same as the app since the 28 Oct 2026 review.
+    var tsFailed = false;
+    getToken().catch(function (e) {
+      if (/110200|Superseded/.test(String(e && e.message || ''))) throw e;
+      tsFailed = true; return undefined;
+    }).then(function (token) {
       return sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false, captchaToken: token } }).then(function (r) {
         resetTurnstile();
         if (r.error) {
           var m = r.error.message || '';
           if (/signups not allowed|not found/i.test(m)) authErr('There is no TENdays account with that email. Use the address you sign into the app with.');
+          else if (tsFailed) authErr('Couldn’t confirm you’re not a robot — check your connection and try again.');
           else if (/captcha/i.test(m)) authErr('The sign-in check was refused — reload the page and try again.');
           else authErr(m);
           return;
